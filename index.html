@@ -1,24 +1,119 @@
 <!doctype html>
-<HTML>
-
-<HEAD>
-	<meta charset="UTF-8">
-	<title>JavaScriptの基礎</title>
-</HEAD>
-
-<BODY>
-    <script type="text/javascript">
-        today = new Date();
-        document.write(today);
-        document.write("<h1>コンピュータグラフィックス</h1>");
-        document.write("<p>担当　中村直人</p>");
-        document.write("<p>この授業では、WebGLを用いてコンピュータグラフィックスを作成します。</p>");
-    
-        var image = new Image(128,128); //image オブジェクトの作成
-        image.src = "ganba.png"; //imageのソースの指定
-        document.body.appendChild(image); //imageをDOM要素に組み込む
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js"
+        }
+      }
     </script>
+    <script type="module">
+      import * as THREE from "three";
 
-</BODY>
+      // サイズを指定
+      const width = 960;
+      const height = 540;
 
-</HTML>
+      // レンダラーを作成
+      const renderer = new THREE.WebGLRenderer({
+        canvas: document.querySelector("#myCanvas"),
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(width, height);
+      renderer.setClearColor(new THREE.Color(0x0d47a1)); // 背景色
+
+      // シーンを作成
+      const scene = new THREE.Scene();
+
+      // カメラを作成
+      const camera = new THREE.PerspectiveCamera(45, width / height);
+      camera.position.set(-100, 250, 700); // カメラ位置
+      camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+      // 照明を追加
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+      directionalLight.position.set(1, 1, 1).normalize();
+      scene.add(directionalLight);
+
+      // 地面を作成
+      scene.add(new THREE.GridHelper(600));
+      scene.add(new THREE.AxesHelper(300));
+
+      // グループを作る
+      const group = new THREE.Group();
+      scene.add(group);
+
+      // 複雑な図形を追加
+      for (let i = 0; i < 10; i++) {
+        const material = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(`hsl(${(i * 36) % 360}, 100%, 50%)`), //色を設定
+          metalness: 0.5,
+          roughness: 0.3,
+        });
+
+        // 図形を交互に配置
+        const geometry = i % 2 === 0
+          ? new THREE.TorusGeometry(30, 10, 16, 100)
+          : new THREE.DodecahedronGeometry(30);
+
+        const mesh = new THREE.Mesh(geometry, material);
+
+        // 配置座標を計算
+        const radian = (i / 10) * Math.PI * 2;
+        mesh.position.set(
+          200 * Math.cos(radian), // X座標
+          50, // Y座標
+          200 * Math.sin(radian), // Z座標
+        );
+
+        // グループに追加
+        group.add(mesh);
+      }
+
+      // パーティクルを追加
+      const particleGroup = new THREE.Group();
+      scene.add(particleGroup);
+
+      for (let i = 0; i < 200; i++) {
+        const particleGeometry = new THREE.SphereGeometry(3, 5, 5);
+        const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.7, transparent: true });
+        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+
+        // 一定の位置にパーティクルを配置
+        particle.position.set(
+          (i % 20) * 20 - 200, // X座標
+          Math.floor(i / 20) * 20 - 100, // Y座標
+          Math.sin(i) * 50 // Z座標
+        );
+
+        particleGroup.add(particle);
+      }
+
+      let cameraAngle = 0;
+
+      tick();
+
+      function tick() {
+        // カメラを円周上に移動
+        cameraAngle += 0.005;
+        camera.position.x = 700 * Math.cos(cameraAngle);
+        camera.position.z = 700 * Math.sin(cameraAngle);
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+        // パーティクルを上下にアニメーション
+        particleGroup.children.forEach((particle, index) => {
+          particle.position.y += Math.sin(Date.now() * 0.001 + index) * 0.5;
+        });
+
+        // レンダリング
+        renderer.render(scene, camera);
+        requestAnimationFrame(tick);
+      }
+    </script>
+  </head>
+  <body>
+    <canvas id="myCanvas"></canvas>
+  </body>
+</html>
